@@ -1,5 +1,5 @@
 // src/pages/Homepage.jsx
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -45,9 +45,6 @@ function Homepage() {
 
   // Favorites
   const [favorites, setFavorites] = useState([]);
-
-  // Debounce timer ref
-  const debounceTimer = useRef(null);
 
   // Fetch properties
   const fetchProperties = async () => {
@@ -100,7 +97,7 @@ function Homepage() {
     }
   };
 
-  // City Autocomplete – with debounce
+  // Handle search
   const fetchCitySuggestions = async (query) => {
     if (!query || query.trim().length < 2) {
       setCitySuggestions([]);
@@ -109,9 +106,8 @@ function Homepage() {
 
     setCityLoading(true);
     try {
-      // ✅ Use the correct endpoint: /api/cities/search
       const response = await axios.get(`${API_BASE}/properties/cities`, {
-        params: { search: query.trim(), limit: 8 },
+        params: { search: query.trim() },
       });
       setCitySuggestions(response.data || []);
     } catch (err) {
@@ -121,15 +117,6 @@ function Homepage() {
       setCityLoading(false);
     }
   };
-
-  // Debounced effect for city search
-  useEffect(() => {
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => {
-      fetchCitySuggestions(searchQuery);
-    }, 300);
-    return () => clearTimeout(debounceTimer.current);
-  }, [searchQuery]);
 
   const handleSearch = () => {
     setFilters(prev => ({ ...prev, city: searchQuery }));
@@ -156,12 +143,9 @@ function Homepage() {
     if (e.key === 'Enter') handleSearch();
   };
 
-  // Close suggestions on outside click
   useEffect(() => {
-    const handleClickOutside = () => setCitySuggestions([]);
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
+    fetchCitySuggestions(searchQuery);
+  }, [searchQuery]);
 
   // Post property
   const handlePostProperty = async (e) => {
@@ -182,6 +166,7 @@ function Homepage() {
       });
       setShowPostProperty(false);
       fetchProperties();
+      // reset form
       setNewProperty({
         title: '', description: '', price: '', area: '', bedrooms: '', bathrooms: '',
         propertyType: 'Apartment', listingType: activeTab, location: '', city: '', state: '', zipCode: '',
@@ -216,7 +201,7 @@ function Homepage() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      {/* ===== NAVBAR (unchanged) ===== */}
+      {/* ===== NAVBAR ===== */}
       <nav className="sticky top-0 z-50 bg-blue-900 shadow-lg px-3 md:px-5 py-2 md:py-3 flex items-center justify-between gap-2 flex-nowrap whitespace-nowrap">
         <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
           <div className="flex items-center gap-1 md:gap-1.5">
@@ -286,6 +271,7 @@ function Homepage() {
       {/* ===== HERO SECTION ===== */}
       <section className="relative bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700 text-white py-8 md:py-12 px-3 md:px-4">
         <div className="max-w-4xl mx-auto">
+          {/* Text Section */}
           <div className="text-center mb-4 md:mb-6">
             <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold leading-tight">
               Properties for rent in <span className="text-yellow-300">Bengaluru</span>
@@ -295,8 +281,8 @@ function Homepage() {
             </p>
           </div>
 
-          {/* ===== FIXED: overflow-visible instead of overflow-hidden ===== */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl overflow-visible">
+          {/* ===== FIX: overflow-hidden → overflow-visible ===== */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-2xl overflow-hidden">
             {/* Tabs */}
             <div className="flex flex-wrap justify-center gap-1 md:gap-2 bg-white/10 backdrop-blur-sm p-1 md:p-1.5 max-w-full mx-auto">
               {['Buy', 'Rent', 'Commercial', 'PG/Co-Living', 'Plots'].map((tab) => (
@@ -314,7 +300,7 @@ function Homepage() {
               ))}
             </div>
 
-            {/* Search Form – with dropdown inside relative container */}
+            {/* Simplified Search Form – only Location + Search button */}
             <div className="bg-white shadow-2xl flex flex-col sm:flex-row gap-2 md:gap-3 text-gray-700 p-2 md:p-3 mt-0">
               <div className="relative flex-1 flex items-center rounded-lg px-3 md:px-4 py-2">
                 <FaMapMarkerAlt className="text-blue-500 mr-2 text-sm md:text-base" />
@@ -325,11 +311,7 @@ function Homepage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  onFocus={() => {
-                    if (citySuggestions.length > 0) setCitySuggestions(citySuggestions);
-                  }}
                 />
-                {/* Dropdown – positioned absolute, not clipped */}
                 {(citySuggestions.length > 0 || cityLoading) && (
                   <div className="absolute left-0 right-0 top-full z-20 mt-1 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
                     {cityLoading ? (
@@ -374,7 +356,7 @@ function Homepage() {
         </div>
       </section>
 
-      {/* ===== PROPERTY GRID (unchanged) ===== */}
+      {/* ===== PROPERTY GRID ===== */}
       <section className="max-w-7xl mx-auto px-4 py-8 md:py-12">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 md:mb-8 gap-2">
           <div>
@@ -446,7 +428,7 @@ function Homepage() {
         )}
       </section>
 
-      {/* ===== FOOTER (unchanged) ===== */}
+      {/* ===== FOOTER ===== */}
       <footer className="bg-gray-900 text-gray-300 pt-8 md:pt-12 pb-6 mt-8 md:mt-10">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
           <div>
@@ -487,7 +469,7 @@ function Homepage() {
         </div>
       </footer>
 
-      {/* ===== MODALS (unchanged) ===== */}
+      {/* ===== LOGIN MODAL ===== */}
       {showLogin && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full relative">
@@ -507,6 +489,7 @@ function Homepage() {
         </div>
       )}
 
+      {/* ===== REGISTER MODAL ===== */}
       {showRegister && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full relative">
@@ -527,6 +510,7 @@ function Homepage() {
         </div>
       )}
 
+      {/* ===== POST PROPERTY MODAL ===== */}
       {showPostProperty && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl p-6 max-w-lg w-full relative max-h-[90vh] overflow-y-auto">

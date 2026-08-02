@@ -22,6 +22,8 @@ function Homepage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [citySuggestions, setCitySuggestions] = useState([]);
+  const [cityLoading, setCityLoading] = useState(false);
   const [filters, setFilters] = useState({
     city: '',
     listingType: 'Buy',
@@ -96,8 +98,35 @@ function Homepage() {
   };
 
   // Handle search
+  const fetchCitySuggestions = async (query) => {
+    if (!query || query.trim().length < 2) {
+      setCitySuggestions([]);
+      return;
+    }
+
+    setCityLoading(true);
+    try {
+      const response = await axios.get(`${API_BASE}/properties/cities`, {
+        params: { search: query.trim() },
+      });
+      setCitySuggestions(response.data || []);
+    } catch (err) {
+      console.error('City autocomplete failed', err);
+      setCitySuggestions([]);
+    } finally {
+      setCityLoading(false);
+    }
+  };
+
   const handleSearch = () => {
     setFilters(prev => ({ ...prev, city: searchQuery }));
+    setCitySuggestions([]);
+  };
+
+  const handleCitySuggestionClick = (city) => {
+    setSearchQuery(city.name);
+    setFilters(prev => ({ ...prev, city: city.name }));
+    setCitySuggestions([]);
   };
 
   const handleTabClick = (tab) => {
@@ -113,6 +142,10 @@ function Homepage() {
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') handleSearch();
   };
+
+  useEffect(() => {
+    fetchCitySuggestions(searchQuery);
+  }, [searchQuery]);
 
   // Post property
   const handlePostProperty = async (e) => {
@@ -269,7 +302,7 @@ function Homepage() {
 
             {/* Simplified Search Form – only Location + Search button */}
             <div className="bg-white shadow-2xl flex flex-col sm:flex-row gap-2 md:gap-3 text-gray-700 p-2 md:p-3 mt-0">
-              <div className="flex-1 flex items-center rounded-lg px-3 md:px-4 py-2">
+              <div className="relative flex-1 flex items-center rounded-lg px-3 md:px-4 py-2">
                 <FaMapMarkerAlt className="text-blue-500 mr-2 text-sm md:text-base" />
                 <input
                   type="text"
@@ -279,6 +312,24 @@ function Homepage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={handleKeyPress}
                 />
+                {(citySuggestions.length > 0 || cityLoading) && (
+                  <div className="absolute left-0 right-0 top-full z-20 mt-1 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+                    {cityLoading ? (
+                      <div className="p-3 text-center text-sm text-slate-500">Loading cities...</div>
+                    ) : (
+                      citySuggestions.map((city) => (
+                        <button
+                          key={`${city.name}-${city.state}`}
+                          type="button"
+                          onClick={() => handleCitySuggestionClick(city)}
+                          className="w-full text-left px-4 py-3 hover:bg-slate-100 transition text-sm text-slate-700"
+                        >
+                          {city.name}{city.state ? `, ${city.state}` : ''}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
               <button
                 className="bg-yellow-400 hover:bg-yellow-300 text-gray-800 font-bold px-6 md:px-8 py-2.5 md:py-3 rounded-lg transition flex items-center justify-center gap-2 shadow-md text-sm md:text-base"

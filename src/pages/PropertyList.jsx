@@ -492,11 +492,6 @@ function PropertyList() {
                                                 alt={property.title}
                                                 className="w-full h-40 sm:h-44 md:h-48 object-cover group-hover:scale-105 transition duration-500"
                                             />
-                                            <img
-                                                src={property.images?.[0] || 'https://via.placeholder.com/400x300?text=No+Image'}
-                                                alt={property.title}
-                                                className="w-full h-40 sm:h-44 md:h-48 object-cover group-hover:scale-105 transition duration-500"
-                                            />
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); toggleFavorite(property._id); }}
                                                 className="absolute top-2 right-2 bg-white p-1.5 md:p-2 rounded-full shadow-md hover:bg-gray-100 transition"

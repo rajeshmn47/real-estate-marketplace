@@ -21,7 +21,7 @@ function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/post-property" element={<PostProperty />} />
           <Route path="/properties" element={<PropertyList />} />
-          <Route path="/properties/:id" element={<PropertyDetails />} />
+          <Route path="/property/:id" element={<PropertyDetails />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
